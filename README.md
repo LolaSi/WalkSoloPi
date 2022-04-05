@@ -17,3 +17,4 @@ in the terminal of pi:
 5) sudo hciconfig hci0 piscan
 
 
+run the code with root permissions (should change it later)
