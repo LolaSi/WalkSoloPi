@@ -14,5 +14,6 @@ in the terminal of pi:
 2) sudo sdptool add SP
 3) systemctl daemon-reload
 4) service bluetooth restart
+5) sudo hciconfig hci0 piscan
 
 
