@@ -1,14 +1,23 @@
 import bluetooth
 import subprocess
 import os
+from PIL import Image
+import io
 
 def sendPicture(client_sock):
     print("yay, going to take pic")
-    subprocess.run(["python", "still_pic.py"])
-    f = open('./photos/image.jpg', 'rb')
-    l = os.path.getsize('./photos/image.jpg')
-    m = f.read(l)
-    client_sock.send(m)
+    #subprocess.run(["python", "still_pic.py"])
+    im = Image.open('./photos/image.jpg')
+    im_resize = im.resize((500,500))
+    buff = io.BytesIO()
+    im_resize.save(buff, format='PNG')
+    byte_im = buff.getvalue()
+    size = (str(len(byte_im))).encode()
+    print(size)
+    #client_sock.send(size)
+    client_sock.send(byte_im)
+    
+    
     
     
 
@@ -36,10 +45,7 @@ def main():
         while True:
             data = client_sock.recv(1024)
             if data.decode("utf-8") == "1":
-                print("yay, going to take pic")
                 sendPicture(client_sock)
-            if not data:
-                break
             print("Received", data)
     except OSError:
         print("Disconnected.")
