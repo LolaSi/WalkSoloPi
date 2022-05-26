@@ -2,7 +2,7 @@
 
 uuid = "94f39d29-7d6d-437d-973b-fba39e49d4ee"
 
-in the terminal of pi:
+first time the terminal of pi:
 1) modify /etc/systemd/system/dbus-org.bluez.service changing
 
     ExecStart=/usr/lib/bluetooth/bluetoothd
@@ -14,7 +14,9 @@ in the terminal of pi:
 2) sudo sdptool add SP
 3) systemctl daemon-reload
 4) service bluetooth restart
-5) sudo hciconfig hci0 piscan
+
+After each restart of pi:
+* sudo hciconfig hci0 piscan
 
 
-run the code with root permissions (should change it later)
+Finally, run the code with root permissions
