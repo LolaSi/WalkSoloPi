@@ -2,7 +2,7 @@
 
 uuid = "94f39d29-7d6d-437d-973b-fba39e49d4ee"
 
-first time the terminal of pi:
+First time use:
 1) modify /etc/systemd/system/dbus-org.bluez.service changing
 
     ExecStart=/usr/lib/bluetooth/bluetoothd
