@@ -8,18 +8,8 @@ try:
     camera.resolution = (640, 480)
     camera.start_preview()
     sleep(5)
-    camera.capture('./photos/image.jpg')
+    camera.capture('./photos/image.png', format='png')
     camera.stop_preview()
     
 finally:
     camera.close()
-
-
-#try:
-	#camera.start_preview()
-	#sleep(10)
-    #camera.capture('./photos/image.jpg')
-    #camera.stop_preview()
-
-#finally:
-	#camera.close()
