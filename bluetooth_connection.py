@@ -10,7 +10,7 @@ def sendPicture(client_sock):
     
     
     #subprocess.run(["python", "still_pic.py"])
-    im = Image.open('./photos/image.jpg')
+    im = Image.open('./photos/image.png')
     im_resize = im.resize((500,500))
     buff = io.BytesIO()
     im_resize.save(buff, format='PNG')
