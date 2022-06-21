@@ -13,15 +13,15 @@ import RPi.GPIO as GPIO
 import time
 
 counter = 0
-camera = PiCamera()
 
-def takePicture():
+def takePicture(camera):
+	global counter
 	try:
 		camera.resolution = (640, 480)
 		camera.start_preview()
 		sleep(5)
-		pic_path = './photos/image' + str(counter)+'.jpg'
-		#camera.capture('./photos/image.jpg')
+		pic_path = './photos/image' + str(counter)+'.png'
+		#camera.capture('./photos/image.png')
 		camera.capture(pic_path)
 		camera.stop_preview()
 		counter += 1
@@ -30,20 +30,22 @@ def takePicture():
 		return pic_path
 
 
-def sendPicture(client_sock):
+def sendPicture(client_sock, camera):
     print("yay, going to take pic")
-    pic_path = takePicture()
+    pic_path = takePicture(camera)
     #subprocess.run(["python", "still_pic.py"])
-    #im = Image.open('./photos/image.jpg')
+    #im = Image.open('./photos/image.png')
     im = Image.open(pic_path)
     im_resize = im.resize((500,500))
     buff = io.BytesIO()
     im_resize.save(buff, format='PNG')
     byte_im = buff.getvalue()
-    size = (str(len(byte_im))).encode()
-    print(size)
-    #client_sock.send(size)
+    #size = (str(len(byte_im))).encode()
+    size = len(byte_im)
+    print("size is:" ,size)
+    client_sock.send(str(size).encode())
     client_sock.send(byte_im)
+    
     
     
 def get_distance():
@@ -77,9 +79,16 @@ def get_distance():
     #       print ("Measured Distance = %.1f cm" % dist)
     #      time.sleep(1)
     
-
+def clear_directory():
+    mydir = './photos'
+    for f in os.listdir(mydir):
+        os.remove(os.path.join(mydir,f))
+        
+        
 def main():
 	#camera = PiCamera()
+    camera = PiCamera()
+    clear_directory()
     while True:
         server_sock = bluetooth.BluetoothSocket(bluetooth.RFCOMM)
         server_sock.bind(("", bluetooth.PORT_ANY))
@@ -104,12 +113,12 @@ def main():
                 data = client_sock.recv(1024)
                 print("Received", data)
                 if data.decode("utf-8") == "1":
-                    sendPicture(client_sock)
+                    sendPicture(client_sock, camera)
                 if data.decode("utf-8") == "2":
                     while True:
 						# set Trigger after 0.1ms
                         time.sleep(0.0001)
-                        sendPicture(client_sock)
+                        sendPicture(client_sock, camera)
 						
         except OSError:
             print("Disconnected.")
