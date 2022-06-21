@@ -106,10 +106,10 @@ def main():
                 if data.decode("utf-8") == "1":
                     sendPicture(client_sock)
                 if data.decode("utf-8") == "2":
-					while True:
+                    while True:
 						# set Trigger after 0.1ms
-						time.sleep(0.0001)
-						sendPicture(client_sock)
+                        time.sleep(0.0001)
+                        sendPicture(client_sock)
 						
         except OSError:
             print("Disconnected.")
@@ -129,5 +129,5 @@ if __name__ == '__main__':
 	#set GPIO direction (IN / OUT)
 	GPIO.setup(GPIO_TRIGGER, GPIO.OUT)
 	GPIO.setup(GPIO_ECHO, GPIO.IN)
-  main()
-  GPIO.cleanup()
+main()
+GPIO.cleanup()
