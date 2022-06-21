@@ -12,23 +12,30 @@ from time import sleep
 import RPi.GPIO as GPIO
 import time
 
-def takePicture(camera):
+counter = 0
+camera = PiCamera()
+
+def takePicture():
 	try:
 		camera.resolution = (640, 480)
 		camera.start_preview()
 		sleep(5)
-		camera.capture('./photos/image.jpg')
+		pic_path = './photos/image' + str(counter)+'.jpg'
+		#camera.capture('./photos/image.jpg')
+		camera.capture(pic_path)
 		camera.stop_preview()
-		
+		counter += 1
 	finally:
 		camera.close()
+		return pic_path
 
 
 def sendPicture(client_sock):
     print("yay, going to take pic")
-    
+    pic_path = takePicture()
     #subprocess.run(["python", "still_pic.py"])
-    im = Image.open('./photos/image.jpg')
+    #im = Image.open('./photos/image.jpg')
+    im = Image.open(pic_path)
     im_resize = im.resize((500,500))
     buff = io.BytesIO()
     im_resize.save(buff, format='PNG')
@@ -72,7 +79,7 @@ def get_distance():
     
 
 def main():
-	camera = PiCamera()
+	#camera = PiCamera()
     while True:
         server_sock = bluetooth.BluetoothSocket(bluetooth.RFCOMM)
         server_sock.bind(("", bluetooth.PORT_ANY))
@@ -95,9 +102,15 @@ def main():
         try:
             while True:
                 data = client_sock.recv(1024)
+                print("Received", data)
                 if data.decode("utf-8") == "1":
                     sendPicture(client_sock)
-                print("Received", data)
+                if data.decode("utf-8") == "2":
+					while True:
+						# set Trigger after 0.1ms
+						time.sleep(0.0001)
+						sendPicture(client_sock)
+						
         except OSError:
             print("Disconnected.")
 
