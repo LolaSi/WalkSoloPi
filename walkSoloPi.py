@@ -13,6 +13,12 @@ import RPi.GPIO as GPIO
 import time
 
 counter = 0
+#set GPIO Pins straight sonar
+GPIO_TRIGGER1 = 18
+GPIO_ECHO1 = 24
+#set GPIO Pins above sonar
+GPIO_TRIGGER2 = 25
+GPIO_ECHO2 = 8
 
 def takePicture(camera):
 	global counter
@@ -45,10 +51,10 @@ def sendPicture(client_sock, camera):
     print("size is:" ,size)
     client_sock.send(str(size).encode())
     client_sock.send(byte_im)
+     
     
     
-    
-def get_distance():
+def get_distance(GPIO_TRIGGER, GPIO_ECHO):
     # set Trigger to HIGH
     GPIO.output(GPIO_TRIGGER, True)
  
@@ -88,7 +94,8 @@ def clear_directory():
 def main():
 	#camera = PiCamera()
     camera = PiCamera()
-    clear_directory()
+    #clear_directory()
+    warning = "branch"
     while True:
         server_sock = bluetooth.BluetoothSocket(bluetooth.RFCOMM)
         server_sock.bind(("", bluetooth.PORT_ANY))
@@ -116,10 +123,17 @@ def main():
                     sendPicture(client_sock, camera)
                 if data.decode("utf-8") == "2":
                     while True:
-						# set Trigger after 0.1ms
-                        time.sleep(0.0001)
-                        sendPicture(client_sock, camera)
-						
+                        dist_ahead = get_distance(GPIO_TRIGGER1, GPIO_ECHO1)
+                        print('dist_ahead:', dist_ahead)
+                        dist_above = get_distance(GPIO_TRIGGER2, GPIO_ECHO2)
+                        print('dist_above:', dist_above)
+                        if (dist_above < 30):
+                            print('branches')
+                        if (dist_ahead < 150):
+                            print('take_pic')
+                        time.sleep(5)
+                        #client_sock.send(warning.encode())
+                        
         except OSError:
             print("Disconnected.")
 
@@ -131,12 +145,18 @@ if __name__ == '__main__':
 	#GPIO Mode (BOARD / BCM)
 	GPIO.setmode(GPIO.BCM)
 	 
-	#set GPIO Pins
-	GPIO_TRIGGER = 18
-	GPIO_ECHO = 24
+	#set GPIO Pins straight sonar
+	GPIO_TRIGGER1 = 18
+	GPIO_ECHO1 = 24
+	
+	#set GPIO Pins above sonar
+	GPIO_TRIGGER2 = 25
+	GPIO_ECHO2 = 8
 	 
 	#set GPIO direction (IN / OUT)
-	GPIO.setup(GPIO_TRIGGER, GPIO.OUT)
-	GPIO.setup(GPIO_ECHO, GPIO.IN)
+	GPIO.setup(GPIO_TRIGGER1, GPIO.OUT)
+	GPIO.setup(GPIO_ECHO1, GPIO.IN)
+	GPIO.setup(GPIO_TRIGGER2, GPIO.OUT)
+	GPIO.setup(GPIO_ECHO2, GPIO.IN)
 main()
 GPIO.cleanup()
