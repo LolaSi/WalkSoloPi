@@ -123,7 +123,7 @@ beat = [
   1
 ]
 
-while True:
+for i in range(1,3):
 	for i in range(1, len(song)): 
 		Buzz.ChangeFrequency(song[i]) 
 		time.sleep(beat[i]*0.13) 
