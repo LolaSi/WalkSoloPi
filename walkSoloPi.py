@@ -13,6 +13,7 @@ import RPi.GPIO as GPIO
 import time
 
 counter = 0
+
 #set GPIO Pins straight sonar
 GPIO_TRIGGER1 = 18
 GPIO_ECHO1 = 24
@@ -32,7 +33,6 @@ def takePicture(camera):
 		camera.stop_preview()
 		counter += 1
 	finally:
-		camera.close()
 		return pic_path
 
 
@@ -53,7 +53,7 @@ def sendPicture(client_sock, camera):
     client_sock.send(byte_im)
      
     
-    
+
 def get_distance(GPIO_TRIGGER, GPIO_ECHO):
     # set Trigger to HIGH
     GPIO.output(GPIO_TRIGGER, True)
@@ -91,10 +91,13 @@ def clear_directory():
         os.remove(os.path.join(mydir,f))
         
         
+def enable_buzzer():
+    print("before subprocess")
+    subprocess.run(["python", "buzzer.py"])
+    
 def main():
-	#camera = PiCamera()
     camera = PiCamera()
-    #clear_directory()
+    clear_directory()
     warning = "branch"
     while True:
         server_sock = bluetooth.BluetoothSocket(bluetooth.RFCOMM)
@@ -133,7 +136,8 @@ def main():
                             print('take_pic')
                         time.sleep(5)
                         #client_sock.send(warning.encode())
-                        
+                if data.decode("utf-8") == "3":
+                    enable_buzzer()          
         except OSError:
             print("Disconnected.")
 
@@ -160,3 +164,4 @@ if __name__ == '__main__':
 	GPIO.setup(GPIO_ECHO2, GPIO.IN)
 main()
 GPIO.cleanup()
+camera.close()
