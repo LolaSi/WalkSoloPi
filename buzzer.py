@@ -1,5 +1,6 @@
 import RPi.GPIO as GPIO
 import time
+import sys
 
 BuzzerPin = 21
 
@@ -123,7 +124,24 @@ beat = [
   1
 ]
 
-for i in range(1,3):
-	for i in range(1, len(song)): 
-		Buzz.ChangeFrequency(song[i]) 
-		time.sleep(beat[i]*0.13) 
+def enable_buzzer(duration):
+  try:
+    repeat = int(duration) // 20
+    print("duration", repeat)
+    for j in range(0, repeat):
+      for i in range(1, len(song)): 
+        Buzz.ChangeFrequency(song[i]) 
+        time.sleep(beat[i]*0.13)
+    print("clean up") 
+  except:
+    pass
+  finally:
+    GPIO.cleanup() # cleanup all GPIO 
+
+
+if __name__ == '__main__':
+    duration = int(sys.argv[1])
+    #repeat = 2
+    print("duration", duration)
+    enable_buzzer(duration)
+
