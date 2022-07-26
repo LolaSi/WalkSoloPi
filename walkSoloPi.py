@@ -3,16 +3,19 @@ import subprocess
 import os
 from PIL import Image
 import io
+import threading
 
 # Libraries for taking picture
 from picamera import PiCamera
 from time import sleep
-
 #Libraries for distance
 import RPi.GPIO as GPIO
 import time
 
+
 counter = 0
+
+loop_notifications = False
 
 #set GPIO Pins straight sonar
 GPIO_TRIGGER1 = 18
@@ -25,8 +28,8 @@ def takePicture(camera):
 	global counter
 	try:
 		camera.resolution = (640, 480)
-		camera.start_preview()
-		sleep(5)
+		#camera.start_preview()
+		#sleep(5)
 		pic_path = './photos/image' + str(counter)+'.png'
 		#camera.capture('./photos/image.png')
 		camera.capture(pic_path)
@@ -36,19 +39,18 @@ def takePicture(camera):
 		return pic_path
 
 
-def sendPicture(client_sock, camera):
+def sendPicture(client_sock, camera, msg_type):
     print("yay, going to take pic")
     pic_path = takePicture(camera)
-    #subprocess.run(["python", "still_pic.py"])
-    #im = Image.open('./photos/image.png')
     im = Image.open(pic_path)
     im_resize = im.resize((500,500))
     buff = io.BytesIO()
     im_resize.save(buff, format='PNG')
     byte_im = buff.getvalue()
-    #size = (str(len(byte_im))).encode()
     size = len(byte_im)
     print("size is:" ,size)
+    msg_type = msg_type + ","
+    client_sock.send(str(msg_type).encode())
     client_sock.send(str(size).encode())
     client_sock.send(byte_im)
      
@@ -80,25 +82,43 @@ def get_distance(GPIO_TRIGGER, GPIO_ECHO):
     distance = (TimeElapsed * 34300) / 2
  
     return distance
-    
-    #dist = distance()
-    #       print ("Measured Distance = %.1f cm" % dist)
-    #      time.sleep(1)
-    
+        
+
+def constant_notifications(client_sock, camera, client_request):
+    global loop_notifications
+    print("in thread loop")
+    print(loop_notifications)
+    while loop_notifications:
+        dist_ahead = get_distance(GPIO_TRIGGER1, GPIO_ECHO1)
+        print('dist_ahead:', dist_ahead)
+        dist_above = get_distance(GPIO_TRIGGER2, GPIO_ECHO2)
+        print('dist_above:', dist_above)
+        if (dist_above < 30):
+            print('branches')
+            client_sock.send(warning.encode())
+        if (dist_ahead < int(client_request[2])):
+            print('take_pic')
+            sendPicture(client_sock, camera, client_request[0])
+        time.sleep(int(client_request[1]))
+
+
 def clear_directory():
     mydir = './photos'
     for f in os.listdir(mydir):
         os.remove(os.path.join(mydir,f))
-        
-        
-def enable_buzzer():
+	
+
+
+def enable_buzzer(duration):
     print("before subprocess")
-    subprocess.run(["python", "buzzer.py"])
+    subprocess.run(["python", "buzzer.py", duration])
+        
     
 def main():
+    global loop_notifications
     camera = PiCamera()
     clear_directory()
-    warning = "branch"
+    warning = "0,branch"
     while True:
         server_sock = bluetooth.BluetoothSocket(bluetooth.RFCOMM)
         server_sock.bind(("", bluetooth.PORT_ANY))
@@ -122,22 +142,23 @@ def main():
             while True:
                 data = client_sock.recv(1024)
                 print("Received", data)
-                if data.decode("utf-8") == "1":
-                    sendPicture(client_sock, camera)
-                if data.decode("utf-8") == "2":
-                    while True:
-                        dist_ahead = get_distance(GPIO_TRIGGER1, GPIO_ECHO1)
-                        print('dist_ahead:', dist_ahead)
-                        dist_above = get_distance(GPIO_TRIGGER2, GPIO_ECHO2)
-                        print('dist_above:', dist_above)
-                        if (dist_above < 30):
-                            print('branches')
-                        if (dist_ahead < 150):
-                            print('take_pic')
-                        time.sleep(5)
-                        #client_sock.send(warning.encode())
-                if data.decode("utf-8") == "3":
-                    enable_buzzer()          
+                data = data.decode("utf-8")
+                #request_data = data.decode("utf-8")
+                client_request = data.split(",")
+                print(client_request)
+                service_type = client_request[0]
+                print("service type ", service_type)
+                if service_type == "1":
+                    sendPicture(client_sock, camera, service_type)
+                if service_type == "2":
+                    loop_notifications = True
+                    t = threading.Thread(target=constant_notifications, args=(client_sock, camera, client_request))
+                    t.start()
+                if service_type == "3":
+                    duration = client_request[1]
+                    enable_buzzer(duration)  
+                if service_type == "4":
+                    loop_notifications = False  
         except OSError:
             print("Disconnected.")
 
