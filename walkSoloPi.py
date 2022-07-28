@@ -12,9 +12,10 @@ from time import sleep
 import RPi.GPIO as GPIO
 import time
 
-
+# counts number of pictures taken
 counter = 0
 
+# is the walk with me btn pressed 
 loop_notifications = False
 
 #set GPIO Pins straight sonar
@@ -24,14 +25,16 @@ GPIO_ECHO1 = 24
 GPIO_TRIGGER2 = 25
 GPIO_ECHO2 = 8
 
+"""
+ takes picture with the camera provided
+ saves it as ./photos/image/counter.png
+ returns the path of the new picture
+"""
 def takePicture(camera):
 	global counter
 	try:
 		camera.resolution = (640, 480)
-		#camera.start_preview()
-		#sleep(5)
 		pic_path = './photos/image' + str(counter)+'.png'
-		#camera.capture('./photos/image.png')
 		camera.capture(pic_path)
 		camera.stop_preview()
 		counter += 1
@@ -39,6 +42,9 @@ def takePicture(camera):
 		return pic_path
 
 
+"""
+sends a new picture over client_sock
+"""
 def sendPicture(client_sock, camera, msg_type):
     print("yay, going to take pic")
     pic_path = takePicture(camera)
@@ -55,7 +61,10 @@ def sendPicture(client_sock, camera, msg_type):
     client_sock.send(byte_im)
      
     
-
+"""
+enables a specified sonar by GPIO_TRIGGER, GPIO_ECHO
+and returns the distance measured with it
+"""
 def get_distance(GPIO_TRIGGER, GPIO_ECHO):
     # set Trigger to HIGH
     GPIO.output(GPIO_TRIGGER, True)
@@ -84,16 +93,26 @@ def get_distance(GPIO_TRIGGER, GPIO_ECHO):
     return distance
         
 
+    """
+    Sends to client socket notifications about surrounding area;
+    if the distance measured ahead is less then the client request, a picture will be sent
+    if the distance measured above is less then the client request, the warning will be sent
+    parameter client_sock: client socket
+    parameter camera: the piCamera object
+    parameter client_request: array [service_type, notification_frequency, distance_ahead, distance_above]
+    """
 def constant_notifications(client_sock, camera, client_request):
     global loop_notifications
     print("in thread loop")
     print(loop_notifications)
+    warning = "0,branch"
+    print(warning)
     while loop_notifications:
         dist_ahead = get_distance(GPIO_TRIGGER1, GPIO_ECHO1)
         print('dist_ahead:', dist_ahead)
         dist_above = get_distance(GPIO_TRIGGER2, GPIO_ECHO2)
         print('dist_above:', dist_above)
-        if (dist_above < 30):
+        if (dist_above < int(client_request[3])):
             print('branches')
             client_sock.send(warning.encode())
         if (dist_ahead < int(client_request[2])):
@@ -102,6 +121,9 @@ def constant_notifications(client_sock, camera, client_request):
         time.sleep(int(client_request[1]))
 
 
+"""
+Deletes all pictured in the folder photos
+"""
 def clear_directory():
     mydir = './photos'
     for f in os.listdir(mydir):
@@ -109,6 +131,9 @@ def clear_directory():
 	
 
 
+"""
+enables the buzzer for the specified duration
+"""
 def enable_buzzer(duration):
     print("before subprocess")
     subprocess.run(["python", "buzzer.py", duration])
@@ -118,7 +143,6 @@ def main():
     global loop_notifications
     camera = PiCamera()
     clear_directory()
-    warning = "0,branch"
     while True:
         server_sock = bluetooth.BluetoothSocket(bluetooth.RFCOMM)
         server_sock.bind(("", bluetooth.PORT_ANY))
@@ -148,16 +172,16 @@ def main():
                 print(client_request)
                 service_type = client_request[0]
                 print("service type ", service_type)
-                if service_type == "1":
+                if service_type == "1": #around me btn
                     sendPicture(client_sock, camera, service_type)
-                if service_type == "2":
+                if service_type == "2": #walk with me
                     loop_notifications = True
                     t = threading.Thread(target=constant_notifications, args=(client_sock, camera, client_request))
                     t.start()
-                if service_type == "3":
+                if service_type == "3": # find device btn
                     duration = client_request[1]
                     enable_buzzer(duration)  
-                if service_type == "4":
+                if service_type == "4": #stop walking with me
                     loop_notifications = False  
         except OSError:
             print("Disconnected.")
