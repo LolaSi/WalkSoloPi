@@ -124,6 +124,9 @@ beat = [
   1
 ]
 
+"""
+plays a song for a specified duration
+"""
 def enable_buzzer(duration):
   try:
     repeat = int(duration) // 20
@@ -134,14 +137,12 @@ def enable_buzzer(duration):
         time.sleep(beat[i]*0.13)
     print("clean up") 
   except:
-    pass
+    print("exception in buzzer")
   finally:
     GPIO.cleanup() # cleanup all GPIO 
 
 
 if __name__ == '__main__':
     duration = int(sys.argv[1])
-    #repeat = 2
-    print("duration", duration)
     enable_buzzer(duration)
 
