@@ -29,7 +29,7 @@ The WalkSolo system is our solution to help enable independence for the visually
 - PyBluez module
 - Picamera module
 
-Link to the raspberryPi code: https://github.com/tashmanr/WalkSolo
+Link to the walkSolo app code: https://github.com/tashmanr/WalkSolo
 
 ## In order to start up the WalkSolo device:
 - First time use:
